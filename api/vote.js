@@ -2,38 +2,31 @@
 import { MongoClient } from 'mongodb';
 
 const MONGODB_URI = process.env.MONGODB_URI;
-const DB_NAME = 'votesdb';
-const COLL_NAME = 'votes';
 
 if (!MONGODB_URI) {
-  throw new Error('MONGODB_URI is missing – add it in Vercel → Settings → Environment Variables');
+  throw new Error('Add MONGODB_URI in Vercel Settings!');
 }
 
-/* ---- Re-use connection (safe for Vercel) ---- */
 let clientPromise;
 
 if (process.env.NODE_ENV === 'development') {
-  // local dev – keep one connection alive
   if (!global._mongoClientPromise) {
     const client = new MongoClient(MONGODB_URI);
     global._mongoClientPromise = client.connect();
   }
   clientPromise = global._mongoClientPromise;
 } else {
-  // Vercel – fresh connection per invocation
   const client = new MongoClient(MONGODB_URI);
   clientPromise = client.connect();
 }
 
-/* ---- Handler ---- */
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
     const client = await clientPromise;
-    const collection = client.db(DB_NAME).collection(COLL_NAME);
+    const collection = client.db('votesdb').collection('votes');
 
     if (req.method === 'GET') {
       const doc = await collection.findOne({ _id: 'totalVotes' });
@@ -52,7 +45,7 @@ export default async function handler(req, res) {
 
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (err) {
-    console.error('Vote API error:', err);
+    console.error('Vote error:', err.message);
     return res.status(500).json({ error: 'DB error', details: err.message });
   }
 }
