@@ -6,7 +6,7 @@
   <title>Support Karanjit Singh - BJP MLA</title>
   <link rel="stylesheet" href="style.css" />
   <link href="https://fonts.googleapis.com/css2?family=Hind:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="icon" href="https://commons.wikimedia.org/wiki/File:BJP_flag.svg">
+  <link rel="icon" href="https://upload.wikimedia.org/wikipedia/commons/1/1e/BJP_flag.svg">
 </head>
 <body>
   <header class="hero">
@@ -32,29 +32,33 @@
         </div>
       </div>
       
-
       <div class="vote-section">
-       <div class="vote-count">
-  <span class="count" id="voteCount">0</span>
-  <span class="label">Votes of Support</span>
-</div>
-<button id="voteBtn" class="vote-btn">
-  <span class="btn-text">Vote Now</span>
-  <span class="btn-success">Voted!</span>
-</button>
+        <div class="vote-count">
+          <span class="count" id="voteCount">0</span>
+          <span class="label">Votes of Support</span>
+        </div>
+        <button id="voteBtn" class="vote-btn">
+          <span class="btn-text">Vote Now</span>
+          <span class="btn-success">Voted!</span>
+        </button>
         <p class="note">One vote per device. Thank you for your support!</p>
       </div>
     </section>
 
-    <section class="party-info">
-      <div class="bjp-logo">
-        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="50" cy="50" r="45" fill="#FF9933"/>
-          <circle cx="50" cy="50" r="30" fill="#138808"/>
-          <text x="50" y="58" font-family="Arial" font-size="40" fill="white" text-anchor="middle">BJP</text>
-        </svg>
+    <!-- Politics Quote & NDA News Section -->
+    <section class="politics-section">
+      <h2 class="section-title">Politics Quote &amp; Latest NDA News</h2>
+      
+      <div class="quote-box">
+        <blockquote>
+          “Politics is the art of the possible, the attainable — the art of the next best.”
+        </blockquote>
+        <cite>— Otto von Bismarck</cite>
       </div>
-      <p><strong>Bharatiya Janata Party</strong> – For a Stronger India</p>
+
+      <div class="news-container" id="newsContainer">
+        <p class="loading">Loading latest NDA news...</p>
+      </div>
     </section>
   </main>
 
