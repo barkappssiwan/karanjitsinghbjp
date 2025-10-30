@@ -1,53 +1,38 @@
 // api/vote.js
 import { MongoClient } from 'mongodb';
 
-// === CONFIG ===
 const MONGODB_URI = process.env.MONGODB_URI;
 const MONGODB_DB = 'votesdb';
-const MONGODB_COLLECTION = 'votes';
 
-// === EARLY ERROR IF URI MISSING ===
-if (!MONGODB_URI) {
-  console.error('MONGODB_URI is MISSING in environment!');
-  throw new Error('MONGODB_URI is not set. Add it in Vercel Environment Variables.');
-}
-
-// === REUSABLE CLIENT (Vercel-safe) ===
+// Global client promise (Vercel-safe)
 let clientPromise;
 
+if (!MONGODB_URI) {
+  throw new Error('MONGODB_URI is missing! Add it in Vercel Environment Variables.');
+}
+
+// Reuse connection in dev, new per invoke in prod
 if (process.env.NODE_ENV === 'development') {
-  // Local dev: reuse connection
   if (!global._mongoClientPromise) {
     const client = new MongoClient(MONGODB_URI);
-    global._mongoClientPromise = client.connect().catch(err => {
-      console.error('Local MongoDB connect failed:', err);
-      throw err;
-    });
+    global._mongoClientPromise = client.connect();
   }
   clientPromise = global._mongoClientPromise;
 } else {
-  // Vercel: create per invocation (safe)
   const client = new MongoClient(MONGODB_URI);
-  clientPromise = client.connect().catch(err => {
-    console.error('Vercel MongoDB connect failed:', err);
-    throw err;
-  });
+  clientPromise = client.connect();
 }
 
-// === HANDLER ===
 export default async function handler(req, res) {
-  // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  let client;
   try {
-    client = await clientPromise;
+    const client = await clientPromise;
     const db = client.db(MONGODB_DB);
-    const collection = db.collection(MONGODB_COLLECTION);
+    const collection = db.collection('votes');
 
     if (req.method === 'GET') {
       const doc = await collection.findOne({ _id: 'totalVotes' });
@@ -66,10 +51,7 @@ export default async function handler(req, res) {
 
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (error) {
-    console.error('Runtime Error in /api/vote:', error);
-    return res.status(500).json({
-      error: 'Server error',
-      details: error.message
-    });
+    console.error('Vote API Error:', error.message);
+    return res.status(500).json({ error: 'Database error', details: error.message });
   }
 }
