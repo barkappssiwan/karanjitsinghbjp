@@ -22,7 +22,7 @@ export default async function handler(req, res) {
 
   try {
     const client = await clientPromise;
-    const collection = client.db('votesdb').collection('votes'); // Auto-creates DB
+    const collection = client.db('votesdb').collection('votes');
 
     if (req.method === 'GET') {
       const doc = await collection.findOne({ _id: 'totalVotes' });
@@ -35,8 +35,12 @@ export default async function handler(req, res) {
         { $inc: { count: 1 } },
         { upsert: true }
       );
+
+      // ALWAYS return updated count
       const doc = await collection.findOne({ _id: 'totalVotes' });
-      return res.status(200).json({ success: true, votes: doc?.count || 1 });
+      const newCount = doc?.count || 1;
+
+      return res.status(200).json({ success: true, votes: newCount });
     }
 
     return res.status(405).json({ error: 'Method not allowed' });
