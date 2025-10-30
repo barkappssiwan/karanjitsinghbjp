@@ -1,0 +1,11 @@
+{
+  "name": "karanjitsingh-bjp",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "dependencies": {
+    "mongodb": "^6.8.0"
+  }
+}
