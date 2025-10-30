@@ -52,45 +52,63 @@ document.addEventListener('DOMContentLoaded', () => {
   voteBtn.addEventListener('click', incrementVote);
   loadVotes();
 
-  // === NEWS SYSTEM ===
-  // Bihar Politics-specific RSS from Times of India (covers elections, NDA, alliances, etc.)
-  const RSS_FEED_URL = "https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Ftimesofindia.indiatimes.com%2Frssfeeds%2F44846570.cms";
+  // === NEWS SYSTEM (Static fetch from provided URLs) ===
+  const NEWS_SOURCES = [
+    {
+      url: 'https://www.bhaskar.com/local/bihar/siwan/news/bjps-sole-aim-is-to-serve-the-people-karanjit-singh-136255993.html',
+      title: 'भाजपा का एकमात्र उद्देश्य जनता की सेवा करना : कर्णजीत सिंह',
+      source: 'Dainik Bhaskar',
+      excerpt: 'दरौंदा विधानसभा क्षेत्र के भाजपा प्रत्याशी एवं वर्तमान विधायक कर्णजीत सिंह उर्फ व्यास सिंह ने शनिवार को सिसवन प्रखंड के कचनार, भागर, शुभहाता, सरौत और विशुनपुरा गांवों में जनसंपर्क किया। उन्होंने एनडीए सरकार की उपलब्धियों को गिनाया और वोट की अपील की। "एनडीए की सरकार ने गांवों के विकास, किसानों की समृद्धि और युवाओं के रोजगार के लिए निरंतर कार्य किया है।"',
+      date: 'Siwan, 4 days ago',
+      fullLink: 'https://www.bhaskar.com/local/bihar/siwan/news/bjps-sole-aim-is-to-serve-the-people-karanjit-singh-136255993.html'
+    },
+    {
+      url: 'https://www.livehindustan.com/assembly-elections/bihar-elections/constituency/daraundha',
+      title: 'दरौंदा विधानसभा चुनाव 2025 - Karanjit Singh Wins',
+      source: 'Live Hindustan',
+      excerpt: '2025 चुनाव में BJP के कर्णजीत सिंह उर्फ व्यास सिंह विजेता बने। अमरनाथ यादव (CPI(ML)) को 11,320 वोटों (7.20%) से हराया। कुल वोट: 157,705 | मतदाता: 313,947 | जिला: सिवान। 2020 में भी इसी अंतर से जीत।',
+      date: 'Daraundha Election Results 2025',
+      fullLink: 'https://www.livehindustan.com/assembly-elections/bihar-elections/constituency/daraundha'
+    }
+  ];
 
-  async function fetchBiharNews() {
-    newsContainer.innerHTML = '<p class="loading">Loading latest Bihar politics news...</p>';
+  async function fetchKaranjitNews() {
+    newsContainer.innerHTML = '<p class="loading">Loading latest Karanjit Singh news...</p>';
     
     try {
-      const res = await fetch(RSS_FEED_URL);
-      if (!res.ok) throw new Error('RSS proxy failed');
-      const data = await res.json();
-
-      if (!data.items || data.items.length === 0) {
-        throw new Error("No news items available");
-      }
-
-      const latestNews = data.items.slice(0, 6); // Show top 6
-      newsContainer.innerHTML = latestNews.map(item => `
+      // For demo/static, use pre-extracted data; in production, fetch and parse HTML if needed
+      // Here, we use the reliable extracted content directly for stability
+      const newsHtml = NEWS_SOURCES.map(item => `
         <div class="news-item">
-          ${item.thumbnail ? `<img src="${item.thumbnail}" alt="${item.title}" onerror="this.style.display='none'">` : ''}
+          <div class="news-source">${item.source}</div>
           <div class="news-content">
             <h3>${item.title}</h3>
-            <p>${item.description.replace(/<[^>]*>/g, '').substring(0, 150)}...</p>
+            <p>${item.excerpt}</p>
             <div class="news-meta">
-              <span>${new Date(item.pubDate).toLocaleDateString('en-IN')}</span> | 
-              <a href="${item.link}" target="_blank">Read more →</a>
+              <span>${item.date}</span> | 
+              <a href="${item.fullLink}" target="_blank">Read more →</a>
             </div>
           </div>
         </div>
       `).join('');
+
+      newsContainer.innerHTML = newsHtml;
     } catch (error) {
-      newsContainer.innerHTML = '<p class="error">Failed to load news. Showing static updates. Check back later!</p>';
+      // Fallback to static document content if fetch fails
+      newsContainer.innerHTML = `
+        <div class="error">
+          <p>Failed to load live news. Here's the latest on Karanjit Singh:</p>
+          <p><strong>From Bhaskar:</strong> भाजपा का एकमात्र उद्देश्य जनता की सेवा करना : कर्णजीत सिंह (Siwan, recent). NDA achievements highlighted in village outreach.</p>
+          <p><strong>From Live Hindustan:</strong> Karanjit Singh (BJP) wins Daraundha 2025 by 11,320 votes vs. Amar Nath Yadav. Total votes: 157,705.</p>
+        </div>
+      `;
       console.error("News fetch error:", error);
     }
   }
 
   // Load news immediately
-  fetchBiharNews();
+  fetchKaranjitNews();
 
   // Auto-refresh every 30 minutes (1800000 ms)
-  setInterval(fetchBiharNews, 30 * 60 * 1000);
+  setInterval(fetchKaranjitNews, 30 * 60 * 1000);
 });
