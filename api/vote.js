@@ -1,39 +1,33 @@
 // api/vote.js
 import { MongoClient } from 'mongodb';
 
-const uri = process.env.MONGODB_URI;
-const dbName = 'votesdb';
-const collectionName = 'votes';
+const MONGODB_URI = process.env.MONGODB_URI;
+const MONGODB_DB = 'votesdb';
+const MONGODB_COLLECTION = 'votes';
 
-// Reuse client across invocations (Vercel serverless best practice)
-let cachedClient = null;
-let cachedDb = null;
+// Global variables to reuse connection
+let client;
+let clientPromise;
 
-async function connectToDatabase() {
-  if (cachedDb && cachedClient) {
-    return { db: cachedDb, client: cachedClient };
+if (!MONGODB_URI) {
+  throw new Error('Please add MONGODB_URI to .env or Vercel Environment Variables');
+}
+
+// In development (vercel dev), reuse client
+if (process.env.NODE_ENV === 'development') {
+  if (!global._mongoClientPromise) {
+    client = new MongoClient(MONGODB_URI);
+    global._mongoClientPromise = client.connect();
   }
-
-  if (!uri) {
-    throw new Error('MONGODB_URI is not configured');
-  }
-
-  const client = new MongoClient(uri, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-    maxPoolSize: 10, // Keep connections alive
-  });
-
-  await client.connect();
-  const db = client.db(dbName);
-
-  cachedClient = client;
-  cachedDb = db;
-
-  return { db, client };
+  clientPromise = global._mongoClientPromise;
+} else {
+  // In production (Vercel), create new client per invocation
+  client = new MongoClient(MONGODB_URI);
+  clientPromise = client.connect();
 }
 
 export default async function handler(req, res) {
+  // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -44,14 +38,13 @@ export default async function handler(req, res) {
 
   let client;
   try {
-    const { db } = await connectToDatabase();
-    client = cachedClient;
-    const collection = db.collection(collectionName);
+    client = await clientPromise;
+    const db = client.db(MONGODB_DB);
+    const collection = db.collection(MONGODB_COLLECTION);
 
     if (req.method === 'GET') {
-      const result = await collection.findOne({ _id: 'totalVotes' });
-      const votes = result?.count || 0;
-      return res.status(200).json({ votes });
+      const doc = await collection.findOne({ _id: 'totalVotes' });
+      return res.status(200).json({ votes: doc?.count || 0 });
     }
 
     if (req.method === 'POST') {
@@ -61,18 +54,16 @@ export default async function handler(req, res) {
         { upsert: true }
       );
 
-      // Get updated count
-      const result = await collection.findOne({ _id: 'totalVotes' });
-      const votes = result?.count || 1;
-
-      return res.status(200).json({ success: true, votes });
+      const doc = await collection.findOne({ _id: 'totalVotes' });
+      return res.status(200).json({ success: true, votes: doc?.count || 1 });
     }
 
-    res.setHeader('Allow', ['GET', 'POST']);
-    return res.status(405).end(`Method ${req.method} Not Allowed`);
+    return res.status(405).json({ error: 'Method Not Allowed' });
   } catch (error) {
-    console.error('Database error:', error.message);
-    return res.status(500).json({ error: 'Failed to process vote', details: error.message });
+    console.error('MongoDB Error:', error.message);
+    return res.status(500).json({
+      error: 'Database connection failed',
+      details: error.message
+    });
   }
-  // DO NOT CLOSE CLIENT HERE
 }
