@@ -53,11 +53,11 @@ document.addEventListener('DOMContentLoaded', () => {
   loadVotes();
 
   // === NEWS SYSTEM ===
-  // Alternative: Hindustan Times India News RSS (covers NDA politics reliably)
-  const RSS_FEED_URL = "https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fwww.hindustantimes.com%2Ffeeds%2Frss%2Findia-news%2Frssfeed.xml";
+  // Bihar Politics-specific RSS from Times of India (covers elections, NDA, alliances, etc.)
+  const RSS_FEED_URL = "https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Ftimesofindia.indiatimes.com%2Frssfeeds%2F44846570.cms";
 
-  async function fetchNDANews() {
-    newsContainer.innerHTML = '<p class="loading">Loading latest NDA news...</p>';
+  async function fetchBiharNews() {
+    newsContainer.innerHTML = '<p class="loading">Loading latest Bihar politics news...</p>';
     
     try {
       const res = await fetch(RSS_FEED_URL);
@@ -89,8 +89,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Load news immediately
-  fetchNDANews();
+  fetchBiharNews();
 
   // Auto-refresh every 30 minutes (1800000 ms)
-  setInterval(fetchNDANews, 30 * 60 * 1000);
+  setInterval(fetchBiharNews, 30 * 60 * 1000);
 });
