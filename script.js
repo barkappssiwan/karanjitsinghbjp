@@ -1,28 +1,31 @@
 const voteBtn = document.getElementById('voteBtn');
 const voteCountEl = document.getElementById('voteCount');
-let hasVoted = false;
+let hasVoted = localStorage.getItem('hasVoted') === 'true';
 
-// Check if already voted (using localStorage)
-if (localStorage.getItem('hasVoted')) {
-  hasVoted = true;
+// Disable button if already voted
+if (hasVoted) {
   voteBtn.classList.add('voted');
   voteBtn.disabled = true;
+  voteBtn.querySelector('.btn-text').textContent = 'Already Voted';
 }
 
-// Fetch current vote count
 async function fetchVotes() {
   try {
     const res = await fetch('/api/vote');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    voteCountEl.textContent = data.votes || 0;
+    voteCountEl.textContent = data.votes ?? 0;
   } catch (err) {
-    console.error('Failed to fetch votes:', err);
+    console.error('Fetch votes failed:', err);
+    voteCountEl.textContent = 'Error';
   }
 }
 
-// Handle vote
 async function castVote() {
   if (hasVoted) return;
+
+  voteBtn.disabled = true;
+  voteBtn.querySelector('.btn-text').textContent = 'Voting...';
 
   try {
     const res = await fetch('/api/vote', {
@@ -30,20 +33,25 @@ async function castVote() {
       headers: { 'Content-Type': 'application/json' }
     });
 
-    if (res.ok) {
+    const data = await res.json();
+
+    if (res.ok && data.success) {
       hasVoted = true;
       localStorage.setItem('hasVoted', 'true');
       voteBtn.classList.add('voted');
-      voteBtn.disabled = true;
-      fetchVotes(); // Update count
+      voteBtn.querySelector('.btn-success').style.display = 'block';
+      voteBtn.querySelector('.btn-text').style.display = 'none';
+      voteCountEl.textContent = data.votes || (parseInt(voteCountEl.textContent) + 1);
+    } else {
+      throw new Error(data.error || 'Vote failed');
     }
   } catch (err) {
-    alert('Failed to record vote. Please try again.');
+    console.error('Vote error:', err);
+    alert('Vote failed: ' + err.message + '\nCheck console (F12) for details.');
+    voteBtn.disabled = false;
+    voteBtn.querySelector('.btn-text').textContent = 'Try Again';
   }
 }
 
-// Event Listeners
 voteBtn.addEventListener('click', castVote);
-
-// Load initial vote count
 fetchVotes();
