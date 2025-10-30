@@ -218,6 +218,15 @@ body {
   object-fit: cover;
 }
 
+.news-source {
+  background: #FF9933;
+  color: white;
+  padding: 5px 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: center;
+}
+
 .news-content {
   padding: 15px;
 }
