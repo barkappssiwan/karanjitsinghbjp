@@ -1,40 +1,47 @@
 // api/vote.js
 import { MongoClient } from 'mongodb';
 
+// === CONFIG ===
 const MONGODB_URI = process.env.MONGODB_URI;
 const MONGODB_DB = 'votesdb';
 const MONGODB_COLLECTION = 'votes';
 
-// Global variables to reuse connection
-let client;
-let clientPromise;
-
+// === EARLY ERROR IF URI MISSING ===
 if (!MONGODB_URI) {
-  throw new Error('Please add MONGODB_URI to .env or Vercel Environment Variables');
+  console.error('MONGODB_URI is MISSING in environment!');
+  throw new Error('MONGODB_URI is not set. Add it in Vercel Environment Variables.');
 }
 
-// In development (vercel dev), reuse client
+// === REUSABLE CLIENT (Vercel-safe) ===
+let clientPromise;
+
 if (process.env.NODE_ENV === 'development') {
+  // Local dev: reuse connection
   if (!global._mongoClientPromise) {
-    client = new MongoClient(MONGODB_URI);
-    global._mongoClientPromise = client.connect();
+    const client = new MongoClient(MONGODB_URI);
+    global._mongoClientPromise = client.connect().catch(err => {
+      console.error('Local MongoDB connect failed:', err);
+      throw err;
+    });
   }
   clientPromise = global._mongoClientPromise;
 } else {
-  // In production (Vercel), create new client per invocation
-  client = new MongoClient(MONGODB_URI);
-  clientPromise = client.connect();
+  // Vercel: create per invocation (safe)
+  const client = new MongoClient(MONGODB_URI);
+  clientPromise = client.connect().catch(err => {
+    console.error('Vercel MongoDB connect failed:', err);
+    throw err;
+  });
 }
 
+// === HANDLER ===
 export default async function handler(req, res) {
   // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
+  if (req.method === 'OPTIONS') return res.status(200).end();
 
   let client;
   try {
@@ -53,16 +60,15 @@ export default async function handler(req, res) {
         { $inc: { count: 1 } },
         { upsert: true }
       );
-
       const doc = await collection.findOne({ _id: 'totalVotes' });
       return res.status(200).json({ success: true, votes: doc?.count || 1 });
     }
 
-    return res.status(405).json({ error: 'Method Not Allowed' });
+    return res.status(405).json({ error: 'Method not allowed' });
   } catch (error) {
-    console.error('MongoDB Error:', error.message);
+    console.error('Runtime Error in /api/vote:', error);
     return res.status(500).json({
-      error: 'Database connection failed',
+      error: 'Server error',
       details: error.message
     });
   }
