@@ -53,23 +53,25 @@ document.addEventListener('DOMContentLoaded', () => {
   loadVotes();
 
   // === NEWS SYSTEM ===
-  const RSS_FEED_URL = "https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Frss.feedspot.com%2Fnda_news_rss%2F";
+  // Alternative: Hindustan Times India News RSS (covers NDA politics reliably)
+  const RSS_FEED_URL = "https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fwww.hindustantimes.com%2Ffeeds%2Frss%2Findia-news%2Frssfeed.xml";
 
   async function fetchNDANews() {
     newsContainer.innerHTML = '<p class="loading">Loading latest NDA news...</p>';
     
     try {
       const res = await fetch(RSS_FEED_URL);
+      if (!res.ok) throw new Error('RSS proxy failed');
       const data = await res.json();
 
       if (!data.items || data.items.length === 0) {
-        throw new Error("No news found");
+        throw new Error("No news items available");
       }
 
       const latestNews = data.items.slice(0, 6); // Show top 6
       newsContainer.innerHTML = latestNews.map(item => `
         <div class="news-item">
-          ${item.enclosure?.link ? `<img src="${item.enclosure.link}" alt="${item.title}">` : ''}
+          ${item.thumbnail ? `<img src="${item.thumbnail}" alt="${item.title}" onerror="this.style.display='none'">` : ''}
           <div class="news-content">
             <h3>${item.title}</h3>
             <p>${item.description.replace(/<[^>]*>/g, '').substring(0, 150)}...</p>
@@ -81,7 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       `).join('');
     } catch (error) {
-      newsContainer.innerHTML = '<p class="error">Failed to load news. Please try again later.</p>';
+      newsContainer.innerHTML = '<p class="error">Failed to load news. Showing static updates. Check back later!</p>';
       console.error("News fetch error:", error);
     }
   }
