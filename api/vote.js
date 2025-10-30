@@ -2,37 +2,38 @@
 import { MongoClient } from 'mongodb';
 
 const MONGODB_URI = process.env.MONGODB_URI;
-const MONGODB_DB = 'votesdb';
-
-// Global client promise (Vercel-safe)
-let clientPromise;
+const DB_NAME = 'votesdb';
+const COLL_NAME = 'votes';
 
 if (!MONGODB_URI) {
-  throw new Error('MONGODB_URI is missing! Add it in Vercel Environment Variables.');
+  throw new Error('MONGODB_URI is missing – add it in Vercel → Settings → Environment Variables');
 }
 
-// Reuse connection in dev, new per invoke in prod
+/* ---- Re-use connection (safe for Vercel) ---- */
+let clientPromise;
+
 if (process.env.NODE_ENV === 'development') {
+  // local dev – keep one connection alive
   if (!global._mongoClientPromise) {
     const client = new MongoClient(MONGODB_URI);
     global._mongoClientPromise = client.connect();
   }
   clientPromise = global._mongoClientPromise;
 } else {
+  // Vercel – fresh connection per invocation
   const client = new MongoClient(MONGODB_URI);
   clientPromise = client.connect();
 }
 
+/* ---- Handler ---- */
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST');
-
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
     const client = await clientPromise;
-    const db = client.db(MONGODB_DB);
-    const collection = db.collection('votes');
+    const collection = client.db(DB_NAME).collection(COLL_NAME);
 
     if (req.method === 'GET') {
       const doc = await collection.findOne({ _id: 'totalVotes' });
@@ -50,8 +51,8 @@ export default async function handler(req, res) {
     }
 
     return res.status(405).json({ error: 'Method not allowed' });
-  } catch (error) {
-    console.error('Vote API Error:', error.message);
-    return res.status(500).json({ error: 'Database error', details: error.message });
+  } catch (err) {
+    console.error('Vote API error:', err);
+    return res.status(500).json({ error: 'DB error', details: err.message });
   }
 }
